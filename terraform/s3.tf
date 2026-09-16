@@ -3,7 +3,7 @@
 data "aws_caller_identity" "current" {}
 
 resource "aws_s3_bucket" "job_snapshots" {
-  bucket = "job-snapshots-${data.aws_caller_identity.current.account_id}"
+  bucket = "job-snapshots-${var.environment}-${data.aws_caller_identity.current.account_id}"
 }
 
 resource "aws_s3_bucket_public_access_block" "job_snapshots" {

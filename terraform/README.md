@@ -4,6 +4,8 @@ This is the prerequisite checklist referenced from `backend.tf` — what has to 
 
 Do these in order. Each step says whether it's a one-time AWS Console action or a CLI command you can run once credentials exist.
 
+This account/tooling setup is done **once**, regardless of how many environments you run — DEV, UAT, and PROD (`../specs/12-multi-environment-cicd.md`) all live in this same account, sharing the state bucket/lock table from step 7 (via separate state-file keys) and the CI/CD OIDC role, and differ only by resource naming and Terraform variables.
+
 ---
 
 ## 0. At a glance
@@ -143,21 +145,27 @@ aws dynamodb create-table \
   --region "$REGION"
 ```
 
-Then initialize this directory against that backend:
+This bucket/table is **shared across every environment** (dev/uat/prod) — see `../specs/12-multi-environment-cicd.md`. Each environment gets its own state file *key* within it, so `terraform init` also needs a `key`, and every `apply`/`plan` needs `-var-file="envs/<environment>.tfvars"`:
 
 ```bash
 cd terraform
+ENVIRONMENT="dev"   # or uat / prod
+
 terraform init \
   -backend-config="bucket=$STATE_BUCKET" \
   -backend-config="dynamodb_table=$LOCK_TABLE" \
-  -backend-config="region=$REGION"
+  -backend-config="region=$REGION" \
+  -backend-config="key=serverless-job-scraper/${ENVIRONMENT}/terraform.tfstate"
 ```
+
+Running this locally for a second environment later (e.g. `uat` after `dev`) needs `terraform init -reconfigure` with that environment's `key` — each environment is a separate state file, so switching between them means re-pointing `init` at the right key, the same way `deploy.yml` does per-environment in CI.
 
 ## 8. Gather the Terraform variables you'll need
 
-- `alert_email` — **required, no default** (`variables.tf`). The email that receives DLQ/Lambda-error alarms (spec 07) — you'll get an SNS confirmation email after the first `apply` that you must click to activate the subscription.
+- `alert_email` — **required, no default** (`variables.tf`). The email that receives DLQ/Lambda-error alarms (spec 07) — you'll get an SNS confirmation email after the first `apply` that you must click to activate the subscription. Not in the committed `envs/*.tfvars` files (spec 12) — pass it explicitly, e.g. `TF_VAR_alert_email=you@example.com terraform apply ...` or `-var="alert_email=..."`.
+- `environment` / `enable_schedule` — **required, no default** (spec 12). Use one of the committed `-var-file="envs/dev.tfvars"` / `envs/uat.tfvars` / `envs/prod.tfvars` rather than setting these by hand — only `prod`'s has `enable_schedule = true` (dev/uat provision the same infra but never run the real cron, to avoid tripling scrape traffic against the job site for no benefit).
 - `container_image_uri` — leave unset for the very first `apply` (see step 9); a Lambda function needs a real image to exist in ECR before it can be created, so the full stack can't be applied in one shot on a brand-new account.
-- Everything else (`sources`, `aws_region`, concurrency limits) has a sensible default matching today's SEEK/Melbourne behavior — override via `terraform.tfvars` only if you want to change something.
+- Everything else (`sources`, `aws_region`, concurrency limits) has a sensible default matching today's SEEK/Melbourne behavior — override via `-var` only if you want to change something.
 
 ## 9. What happens right after this
 

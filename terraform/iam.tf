@@ -14,7 +14,7 @@ data "aws_iam_policy_document" "lambda_assume_role" {
 # ---- Lambda A: list-jobs ----
 
 resource "aws_iam_role" "list_jobs" {
-  name               = "serverless-job-scraper-list-jobs"
+  name               = "serverless-job-scraper-${var.environment}-list-jobs"
   assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
 }
 
@@ -32,8 +32,8 @@ data "aws_iam_policy_document" "list_jobs" {
   }
 
   statement {
-    sid     = "WriteLogs"
-    actions = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
+    sid       = "WriteLogs"
+    actions   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
     resources = ["arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:*"]
   }
 }
@@ -47,7 +47,7 @@ resource "aws_iam_role_policy" "list_jobs" {
 # ---- Lambda B: job-detail ----
 
 resource "aws_iam_role" "job_detail" {
-  name               = "serverless-job-scraper-job-detail"
+  name               = "serverless-job-scraper-${var.environment}-job-detail"
   assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
 }
 
@@ -71,8 +71,8 @@ data "aws_iam_policy_document" "job_detail" {
   }
 
   statement {
-    sid     = "WriteLogs"
-    actions = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
+    sid       = "WriteLogs"
+    actions   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
     resources = ["arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:*"]
   }
 }

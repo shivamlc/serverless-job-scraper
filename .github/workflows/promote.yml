@@ -1,0 +1,33 @@
+# specs/12-multi-environment-cicd.md
+#
+# Manual promotion to UAT or PROD. `image_tag` is a required, explicit input — never
+# inferred — so there is never ambiguity about which already-built artifact is being
+# promoted (find it in the "Build and deploy to dev" workflow run for the commit
+# you want, e.g. "sha-abc1234"). Promoting to prod additionally requires approving
+# the "prod" GitHub Environment's required reviewer gate (see deploy.yml).
+name: Promote to UAT or PROD
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options: [uat, prod]
+      image_tag:
+        description: 'Image tag to promote (e.g. sha-abc1234) — must already exist in ECR, typically because it was deployed to dev first.'
+        required: true
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: ${{ inputs.environment }}
+      image_tag: ${{ inputs.image_tag }}
+    secrets: inherit

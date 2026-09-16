@@ -8,6 +8,23 @@ variable "aws_region" {
   default = "ap-southeast-2"
 }
 
+# specs/12-multi-environment-cicd.md
+variable "environment" {
+  description = "dev | uat | prod — suffixed onto every environment-scoped resource name. The ECR repository is the one deliberate exception (shared across environments, see spec 12)."
+  type        = string
+
+  validation {
+    condition     = contains(["dev", "uat", "prod"], var.environment)
+    error_message = "environment must be one of: dev, uat, prod"
+  }
+}
+
+variable "enable_schedule" {
+  description = "specs/12 — whether to create the real EventBridge cron schedules. DEV/UAT default false: the infra exists and can be invoked manually, but only PROD should actually run the recurring scrape (running the same cron 3x across environments would triple real traffic against the job site for no benefit)."
+  type        = bool
+  default     = false
+}
+
 variable "alert_email" {
   description = "Email address subscribed to the DLQ / Lambda-error SNS alarm topic."
   type        = string

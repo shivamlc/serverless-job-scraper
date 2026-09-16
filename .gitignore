@@ -16,6 +16,9 @@ npm-debug.log*
 *.tfstate.*
 *.tfvars
 !*.tfvars.example
+# terraform/envs/*.tfvars ARE committed — no secrets in them (specs/12), they're
+# the dev/uat/prod environment definitions the CI/CD pipeline reads directly.
+!terraform/envs/*.tfvars
 crash.log
 crash.*.log
 # .terraform.lock.hcl is intentionally NOT ignored — it pins provider versions

@@ -2,7 +2,7 @@
 # source is a one-entry diff here; no other file changes.
 
 resource "aws_scheduler_schedule_group" "job_scraper" {
-  name = "serverless-job-scraper"
+  name = "serverless-job-scraper-${var.environment}"
 }
 
 data "aws_iam_policy_document" "scheduler_assume_role" {
@@ -16,7 +16,7 @@ data "aws_iam_policy_document" "scheduler_assume_role" {
 }
 
 resource "aws_iam_role" "scheduler_invoke_list_jobs" {
-  name               = "serverless-job-scraper-scheduler"
+  name               = "serverless-job-scraper-${var.environment}-scheduler"
   assume_role_policy = data.aws_iam_policy_document.scheduler_assume_role.json
 }
 
@@ -37,9 +37,12 @@ resource "aws_iam_role_policy" "scheduler_invoke_list_jobs" {
 }
 
 resource "aws_scheduler_schedule" "list_jobs" {
-  for_each = var.sources
+  # specs/12-multi-environment-cicd.md — DEV/UAT default enable_schedule = false:
+  # the Lambdas/queue/table/bucket all still exist for manual testing, but only an
+  # environment with enable_schedule = true actually runs the recurring scrape.
+  for_each = var.enable_schedule ? var.sources : {}
 
-  name                         = "list-jobs-${each.key}"
+  name                         = "list-jobs-${var.environment}-${each.key}"
   group_name                   = aws_scheduler_schedule_group.job_scraper.name
   schedule_expression          = each.value.schedule_expression
   schedule_expression_timezone = "Australia/Melbourne"
@@ -55,15 +58,15 @@ resource "aws_scheduler_schedule" "list_jobs" {
     input = jsonencode({
       source = each.key
       searchParams = {
-        keywords         = each.value.search_params.keywords
-        cityLabel        = each.value.search_params.city_label
-        citySlug         = each.value.search_params.city_slug
-        dateRangeDays    = each.value.search_params.date_range_days
-        workType         = each.value.search_params.work_type
-        salaryMin        = each.value.search_params.salary_min
-        salaryMax        = each.value.search_params.salary_max
-        salaryType       = each.value.search_params.salary_type
-        workArrangement  = each.value.search_params.work_arrangement
+        keywords        = each.value.search_params.keywords
+        cityLabel       = each.value.search_params.city_label
+        citySlug        = each.value.search_params.city_slug
+        dateRangeDays   = each.value.search_params.date_range_days
+        workType        = each.value.search_params.work_type
+        salaryMin       = each.value.search_params.salary_min
+        salaryMax       = each.value.search_params.salary_max
+        salaryType      = each.value.search_params.salary_type
+        workArrangement = each.value.search_params.work_arrangement
       }
     })
 

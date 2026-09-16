@@ -8,7 +8,7 @@ locals {
 }
 
 resource "aws_lambda_function" "list_jobs" {
-  function_name = "list-jobs"
+  function_name = "list-jobs-${var.environment}"
   role          = aws_iam_role.list_jobs.arn
   package_type  = "Image"
   image_uri     = local.container_image_uri
@@ -33,7 +33,7 @@ resource "aws_lambda_function" "list_jobs" {
 }
 
 resource "aws_lambda_function" "job_detail" {
-  function_name = "job-detail"
+  function_name = "job-detail-${var.environment}"
   role          = aws_iam_role.job_detail.arn
   package_type  = "Image"
   image_uri     = local.container_image_uri

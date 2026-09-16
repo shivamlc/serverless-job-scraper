@@ -1,7 +1,7 @@
 # specs/07-queue-and-dlq.md
 
 resource "aws_sns_topic" "job_scraper_alerts" {
-  name = "job-scrape-alerts"
+  name = "job-scrape-alerts-${var.environment}"
 }
 
 resource "aws_sns_topic_subscription" "job_scraper_alerts_email" {
@@ -11,7 +11,7 @@ resource "aws_sns_topic_subscription" "job_scraper_alerts_email" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "dlq_not_empty" {
-  alarm_name          = "job-scrape-dlq-not-empty"
+  alarm_name          = "job-scrape-dlq-not-empty-${var.environment}"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
   metric_name         = "ApproximateNumberOfMessagesVisible"
@@ -29,7 +29,7 @@ resource "aws_cloudwatch_metric_alarm" "dlq_not_empty" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "list_jobs_errors" {
-  alarm_name          = "list-jobs-errors"
+  alarm_name          = "list-jobs-errors-${var.environment}"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
   metric_name         = "Errors"
@@ -47,7 +47,7 @@ resource "aws_cloudwatch_metric_alarm" "list_jobs_errors" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "job_detail_errors" {
-  alarm_name          = "job-detail-errors"
+  alarm_name          = "job-detail-errors-${var.environment}"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
   metric_name         = "Errors"

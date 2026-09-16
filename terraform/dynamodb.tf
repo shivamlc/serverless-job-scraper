@@ -1,7 +1,7 @@
 # specs/06-data-model.md
 
 resource "aws_dynamodb_table" "scraped_jobs" {
-  name         = "ScrapedJobs"
+  name         = "ScrapedJobs-${var.environment}"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "jobKey"
   range_key    = "scrapedAt"

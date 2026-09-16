@@ -5,6 +5,17 @@ import { findLastScrapedAt, isWithinFreshnessWindow } from '../lib/dynamo.js';
 import type { JobScrapeMessage, ListJobsEvent } from '../lib/messages.js';
 import { getJobScrapeQueueUrl, sendJobScrapeMessages } from '../lib/sqs.js';
 
+/**
+ * Purpose: Lambda A's entrypoint ("list-jobs", specs/04-lambda-list-jobs.md) —
+ * resolves the adapter for event.source, walks every result page via
+ * adapter.listJobLinks (no job-detail pages opened here), skip-checks each link
+ * against DynamoDB, and enqueues the rest to job-scrape-queue in batches of 10.
+ * Exports: handler (the Lambda entrypoint — terraform/lambda.tf points at it as
+ * "handlers/listJobs.handler"), ListJobsResult (the handler's return shape).
+ * Triggered by: EventBridge Scheduler, one schedule per terraform "sources" map
+ * entry (terraform/eventbridge.tf) — or invoked manually (aws lambda invoke) in
+ * dev/uat, which don't run the real cron (specs/12-multi-environment-cicd.md).
+ */
 export interface ListJobsResult {
   jobsFound: number;
   jobsEnqueued: number;

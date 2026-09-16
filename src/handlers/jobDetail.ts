@@ -6,7 +6,16 @@ import type { JobScrapeMessage } from '../lib/messages.js';
 import { getSnapshotBucketName, putSnapshot } from '../lib/s3.js';
 import { buildJobKey } from '../types/job.js';
 
-/** specs/05-lambda-job-detail.md — SQS-triggered, batch size 1 for v1. */
+/**
+ * Purpose: Lambda B's entrypoint ("job-detail", specs/05-lambda-job-detail.md) —
+ * resolves the adapter for the message's source, scrapes exactly one job's detail
+ * page + raw HTML snapshot, writes the snapshot to S3, then the structured item to
+ * DynamoDB (S3 always before DynamoDB — see the comment below).
+ * Exports: handler (the Lambda entrypoint — terraform/lambda.tf points at it as
+ * "handlers/jobDetail.handler").
+ * Triggered by: the SQS event source mapping on job-scrape-queue, batch size 1
+ * (terraform/lambda.tf) — each invocation processes exactly one JobScrapeMessage.
+ */
 export const handler: SQSHandler = async (event: SQSEvent) => {
   const bucketName = getSnapshotBucketName();
 

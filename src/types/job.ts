@@ -1,3 +1,11 @@
+/**
+ * Purpose: shared data types for a scraped job record, plus the one function
+ * allowed to build a DynamoDB partition key from them (specs/06-data-model.md).
+ * Exports: JobSource, JobSection, JobDetail, buildJobKey.
+ * Used by: src/adapters/types.ts (JobSection in ScrapedJobDetail), src/handlers/jobDetail.ts
+ * (constructs the JobDetail item), src/lib/dynamo.ts (item shape written to DynamoDB).
+ */
+
 export type JobSource = 'seek' | 'indeed' | 'linkedin';
 
 export interface JobSection {

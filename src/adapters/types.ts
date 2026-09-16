@@ -1,6 +1,17 @@
 import type { Page } from 'playwright-core';
 import type { JobSection, JobSource } from '../types/job.js';
 
+/**
+ * Purpose: the site-agnostic contract this whole pipeline is built around — the
+ * common search-config shape (SearchParams, specs/01) and the interface every
+ * job-site scraper implements (JobSiteAdapter, specs/02). No implementation lives
+ * here, only types.
+ * Exports: SearchParams, JobLink, ScrapedJobDetail, JobSiteAdapter.
+ * Used by: src/adapters/seek.ts (implements JobSiteAdapter), src/adapters/index.ts
+ * (registry is typed against JobSiteAdapter), src/handlers/listJobs.ts and
+ * src/handlers/jobDetail.ts (consume adapters via this interface, never a concrete class).
+ */
+
 /** specs/01-search-params-and-config.md */
 export interface SearchParams {
   keywords: string;

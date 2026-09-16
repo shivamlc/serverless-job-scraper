@@ -28,6 +28,7 @@ resource "aws_lambda_function" "list_jobs" {
     variables = {
       JOB_SCRAPE_QUEUE_URL         = aws_sqs_queue.job_scrape_queue.url
       SKIP_IF_SCRAPED_WITHIN_HOURS = tostring(var.skip_if_scraped_within_hours)
+      SCRAPED_JOBS_TABLE_NAME      = aws_dynamodb_table.scraped_jobs.name
     }
   }
 }
@@ -53,6 +54,7 @@ resource "aws_lambda_function" "job_detail" {
   environment {
     variables = {
       JOB_SNAPSHOT_BUCKET_NAME = aws_s3_bucket.job_snapshots.bucket
+      SCRAPED_JOBS_TABLE_NAME  = aws_dynamodb_table.scraped_jobs.name
     }
   }
 }

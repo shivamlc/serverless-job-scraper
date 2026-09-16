@@ -1,4 +1,12 @@
 <!DOCTYPE html>
+<!--
+  Purpose: a SEEK job-detail page covering every field/selector seekAdapter.
+  scrapeJobDetail reads: title/company/location/salary/workType/postedDate, plus
+  a jobAdDetails body with a heading, two paragraphs, and a bullet list (exercises
+  the DOM-walking section/heading extraction). See specs/03-seek-adapter.md.
+  Used by: tests/unit/seekAdapter.test.ts, tests/integration/seekAdapterNavigation.integration.test.ts,
+  tests/unit/handlers/jobDetail.test.ts (as the shape of a ScrapedJobDetail).
+-->
 <html>
 <body>
   <h1 data-automation="job-detail-title">Senior Software Engineer</h1>

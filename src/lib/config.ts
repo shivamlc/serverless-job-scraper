@@ -2,12 +2,17 @@ import type { SearchParams } from '../adapters/types.js';
 import { parseIntEnv } from './env.js';
 
 /**
- * specs/01-search-params-and-config.md
- *
- * The ONLY place in this repo allowed to read process.env for site-search
- * configuration. Called once, at the top of a local entrypoint (never inside
- * src/adapters/** or src/handlers/**), producing a plain SearchParams object
- * that flows down as a function argument from there.
+ * Purpose: the ONLY place in this repo allowed to read process.env for
+ * site-search configuration (specs/01-search-params-and-config.md), plus the
+ * one operational (non-search) setting Lambda A needs from the environment.
+ * Exports: loadSearchParamsFromEnv() — called once, at the top of a local
+ * entrypoint (never inside src/adapters/** or src/handlers/**), producing a
+ * plain SearchParams object that flows down as a function argument from there;
+ * getSkipWindowHours() — how many hours before a job is re-scraped (specs/04).
+ * Used by: getSkipWindowHours() is used by src/handlers/listJobs.ts.
+ * loadSearchParamsFromEnv() is for local/manual runs (e.g. the planned refactor
+ * of ../../seek-scrape-jobs.spec.ts) — Lambda gets SearchParams from its
+ * EventBridge event instead (specs/01's "production config source").
  */
 
 const WORK_TYPES = ['full-time', 'part-time', 'contract', 'casual'] as const;

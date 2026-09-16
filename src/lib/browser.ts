@@ -1,6 +1,12 @@
 import type { Browser } from 'playwright-core';
 
 /**
+ * Purpose: environment-aware Playwright browser launcher — one function both
+ * handlers call so neither has to know whether it's running in Lambda or locally.
+ * Exports: launchBrowser().
+ * Used by: src/handlers/listJobs.ts and src/handlers/jobDetail.ts (each launches
+ * one browser per invocation and closes it in a `finally`).
+ *
  * specs/09-terraform-infra.md (Packaging Playwright for Lambda).
  *
  * In the Lambda container image, launches the @sparticuz/chromium binary built for

@@ -2,6 +2,19 @@ import type { Page } from 'playwright-core';
 import type { JobLink, JobSiteAdapter, ScrapedJobDetail, SearchParams } from './types.js';
 
 /**
+ * Purpose: SEEK's JobSiteAdapter implementation — the only concrete adapter that
+ * exists today. Ported from the original ../../seek-scrape-jobs.spec.ts (a
+ * Playwright test file) into three plain, test-runner-independent functions
+ * (specs/03-seek-adapter.md): buildSearchUrl (SearchParams → SEEK's URL/query
+ * shape), listJobLinks (pagination walk), scrapeJobDetail (per-job extraction +
+ * raw HTML snapshot capture).
+ * Exports: seekAdapter (the JobSiteAdapter object; everything else in this file
+ * is a private implementation detail).
+ * Used by: src/adapters/index.ts (registered under the "seek" key) — never
+ * imported directly by a handler, always resolved via getAdapter("seek").
+ */
+
+/**
  * specs/03-seek-adapter.md — best-effort guess at SEEK's work-arrangement codes.
  * Only "all three" (today's default) is verified; do not rely on filtering by a
  * subset in production without confirming these codes against a real SEEK search.

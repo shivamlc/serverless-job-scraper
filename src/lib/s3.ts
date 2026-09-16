@@ -1,6 +1,16 @@
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getRequiredEnv } from './env.js';
 
+/**
+ * Purpose: thin S3 wrapper — the only module that writes HTML snapshots
+ * (specs/06-data-model.md's job-snapshots bucket).
+ * Exports: getSnapshotBucketName() — resolves the environment-scoped bucket
+ * name Terraform sets as JOB_SNAPSHOT_BUCKET_NAME; putSnapshot() — uploads one
+ * job's raw HTML.
+ * Used by: src/handlers/jobDetail.ts (both, always before the DynamoDB write —
+ * specs/05).
+ */
+
 // Lazily constructed (not at module load) so that anything which sets env vars
 // before first use — e.g. an integration test's beforeAll — takes effect. A
 // module-load-time client would freeze `forcePathStyle` before such setup ran.

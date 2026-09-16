@@ -31,6 +31,11 @@ export async function setUpLocalstackResources(): Promise<{ queueUrl: string }> 
   const s3 = new S3Client(s3ClientConfig);
   const sqs = new SQSClient(clientConfig);
 
+  // src/lib/dynamo.ts reads the table name from this env var (it's environment-
+  // scoped in real Terraform, specs/12) — set it here so handlers under test
+  // resolve it to the table this function is about to create.
+  process.env.SCRAPED_JOBS_TABLE_NAME = TABLE_NAME;
+
   try {
     await dynamo.send(
       new CreateTableCommand({

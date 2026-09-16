@@ -2,6 +2,15 @@ import { SendMessageBatchCommand, SQSClient } from '@aws-sdk/client-sqs';
 import { getRequiredEnv } from './env.js';
 import type { JobScrapeMessage } from './messages.js';
 
+/**
+ * Purpose: thin SQS wrapper — the only module that sends to job-scrape-queue
+ * (specs/07-queue-and-dlq.md).
+ * Exports: getJobScrapeQueueUrl() — resolves the environment-scoped queue URL
+ * Terraform sets as JOB_SCRAPE_QUEUE_URL; sendJobScrapeMessages() — batches
+ * messages into groups of 10 (SQS's own per-call limit) via SendMessageBatch.
+ * Used by: src/handlers/listJobs.ts (both — specs/04 step 4c).
+ */
+
 // useQueueUrlAsEndpoint: false — don't let the SDK switch endpoints based on a
 // QueueUrl's host (harmless against real AWS; avoids a LocalStack footgun where
 // its returned QueueUrl host differs from the configured endpoint).

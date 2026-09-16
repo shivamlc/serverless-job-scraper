@@ -1,0 +1,32 @@
+# Node
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+npm-debug.log*
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+crash.*.log
+# .terraform.lock.hcl is intentionally NOT ignored — it pins provider versions
+# and should be committed (Terraform's own recommendation).
+
+# Test / build artifacts
+test-results/
+playwright-report/
+*.zip
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store

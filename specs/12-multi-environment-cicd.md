@@ -125,14 +125,14 @@ flowchart LR
 | `uat` | Optional (team's call) | `main` only |
 | `prod` | **Yes** (unchanged from spec 10) | `main` only |
 
-Same OIDC role can back all three (it's scoped to this project's resource types and IAM role-name prefix per `terraform/README.md` step 3, and that prefix now includes `-${environment}-`, so update the role's IAM policy's `Resource` pattern to `serverless-job-scraper-*` — already broad enough, no change needed there since `dev`/`uat`/`prod` are inside the `-*` wildcard).
+Same OIDC role can back all three (it's scoped to this project's resource types and IAM role-name prefix per `terraform/README.md` step 3a, and that prefix now includes `-${environment}-`, so its IAM policy's `Resource` pattern `serverless-job-scraper-*` is already broad enough — no change needed there since `dev`/`uat`/`prod` are inside the `-*` wildcard).
 
 ## GitHub-side one-time setup (do this before any of the above workflows can run)
 
 1. **Create three GitHub Environments**: Settings → Environments → `dev`, `uat`, `prod`. Set required reviewers + deployment branch restriction per the table above (`prod` needs a required reviewer; `dev`/`uat` at minimum restrict deployments to `main`).
 2. **Repository-level variables** (Settings → Secrets and variables → Actions → Variables — visible to every environment, since the resource they identify is shared): `AWS_TERRAFORM_ROLE_ARN`, `AWS_REGION`, `TF_STATE_BUCKET`, `TF_STATE_LOCK_TABLE`, `ECR_REPOSITORY_URL` (the shared repo's URL — from `terraform output ecr_repository_url` once it exists, or `<account-id>.dkr.ecr.<region>.amazonaws.com/serverless-job-scraper`).
 3. **Per-environment variable, set inside each of the three Environments**: `ALERT_EMAIL` — can be the same address for all three, or different if you want DEV/UAT alarm noise routed elsewhere than PROD's.
-4. The OIDC role behind `AWS_TERRAFORM_ROLE_ARN` is the same one from `terraform/README.md` step 3's trust policy, scoped to this specific GitHub repo — one role, reused by `ci.yml`, `build.yml`, and every `deploy.yml` invocation regardless of target environment.
+4. The OIDC role behind `AWS_TERRAFORM_ROLE_ARN` is created in `terraform/README.md` step 3a (a distinct, keyless identity from step 3's human IAM user), with a trust policy scoped to this specific GitHub repo — one role, reused by `ci.yml`, `build.yml`, and every `deploy.yml` invocation regardless of target environment.
 
 ## Acceptance criteria
 

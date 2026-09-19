@@ -15,6 +15,7 @@ This account/tooling setup is done **once**, regardless of how many environments
 | 1 | Create/access an AWS account | Console |
 | 2 | Secure the root user (MFA), stop using it day-to-day | Console |
 | 3 | Create an IAM user for yourself to run Terraform with | Console or CLI (bootstrap) |
+| 3a | Create the GitHub Actions OIDC role (only needed once you wire up CI/CD) | CLI |
 | 4 | Install & configure the AWS CLI locally | Your machine |
 | 5 | Set a billing alarm / budget | Console or CLI |
 | 6 | Install Terraform | Your machine |
@@ -73,6 +74,56 @@ Create a named IAM user (not root) that you'll use to run Terraform from your la
   ```
 
   (`dynamodb:*`/`s3:*`/etc. with `Resource: "*"` is still broader than the individual Lambda execution-role policies in `specs/08-iam.md` — those stay narrow. This is *your* operator identity for running Terraform, which unavoidably needs to create/modify these resource types across the account; it is not what gets deployed.)
+
+## 3a. Create the GitHub Actions OIDC role
+
+**Not the same identity as step 3.** Step 3 is *you*, running Terraform by hand from your laptop with a long-lived access key. This step is a **separate, keyless** identity that GitHub Actions itself assumes — the `AWS_TERRAFORM_ROLE_ARN` variable every workflow in `.github/workflows/` authenticates with (`specs/10-cicd-pipeline.md`'s "no long-lived AWS access keys stored as repo secrets"). Skip this until you're ready to wire up CI/CD; nothing in steps 4–9 needs it.
+
+1. **Create the OIDC identity provider** (once per AWS account — skip if a `token.actions.githubusercontent.com` provider already exists, e.g. from another project):
+   ```bash
+   aws iam create-open-id-connect-provider \
+     --url https://token.actions.githubusercontent.com \
+     --client-id-list sts.amazonaws.com \
+     --thumbprint-list 6938fd4d98bab03faadb97b34396831e3780aea1
+   ```
+   (AWS has validated against GitHub's actual TLS certificate chain since 2023 rather than this thumbprint, but the CLI still requires a value in the request — this is the conventional one everyone uses.)
+
+2. **Write a trust policy scoped to your specific repo** — `<GITHUB_ORG>/<REPO_NAME>` (e.g. `yourname/serverless-job-scraper`), never a wildcard org or "any repo":
+   ```bash
+   ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+   GITHUB_ORG="<your-github-username-or-org>"
+   REPO_NAME="serverless-job-scraper"
+
+   cat > /tmp/github-oidc-trust-policy.json <<EOF
+   {
+     "Version": "2012-10-17",
+     "Statement": [{
+       "Effect": "Allow",
+       "Principal": { "Federated": "arn:aws:iam::${ACCOUNT_ID}:oidc-provider/token.actions.githubusercontent.com" },
+       "Action": "sts:AssumeRoleWithWebIdentity",
+       "Condition": {
+         "StringEquals": { "token.actions.githubusercontent.com:aud": "sts.amazonaws.com" },
+         "StringLike": { "token.actions.githubusercontent.com:sub": "repo:${GITHUB_ORG}/${REPO_NAME}:*" }
+       }
+     }]
+   }
+   EOF
+   ```
+   The `:*` at the end of `sub` matches any branch/PR/environment in this repo. Tighten it later (e.g. `repo:${GITHUB_ORG}/${REPO_NAME}:environment:prod` for a prod-only role) once the basic pipeline works, if you want branch/environment-scoped roles instead of one shared one.
+
+3. **Create the role and attach the same scoped policy from step 3** (the "tighter least-privilege" JSON above — this role needs the same permissions Terraform itself needs, since it's the identity running Terraform in CI):
+   ```bash
+   aws iam create-role \
+     --role-name serverless-job-scraper-github-actions \
+     --assume-role-policy-document file:///tmp/github-oidc-trust-policy.json
+
+   aws iam put-role-policy \
+     --role-name serverless-job-scraper-github-actions \
+     --policy-name terraform-cicd \
+     --policy-document file:///tmp/terraform-operator-policy.json   # the step-3 JSON, saved to a file
+   ```
+
+4. The resulting ARN — `arn:aws:iam::<account-id>:role/serverless-job-scraper-github-actions` — is what you paste into the `AWS_TERRAFORM_ROLE_ARN` **repository variable** in GitHub (Settings → Secrets and variables → Actions → Variables). It's deterministic from your account ID and the role name you chose above, so you can compute it without waiting on anything.
 
 ## 4. Install & configure the AWS CLI locally
 

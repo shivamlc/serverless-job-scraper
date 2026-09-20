@@ -157,7 +157,7 @@ Cheap insurance before touching anything billed. Either:
     --notifications-with-subscribers '[{"Notification":{"NotificationType":"ACTUAL","ComparisonOperator":"GREATER_THAN","Threshold":80},"Subscribers":[{"SubscriptionType":"EMAIL","Address":"<your-email>"}]}]'
   ```
 
-Given this project's own cost estimate (`../aws-roadmap/serverless-seek-scraper.md`) is effectively $0–1/month, a $10 threshold firing at all is itself a useful early signal that something's misconfigured (e.g. reserved concurrency not applied, a retry loop gone wrong).
+Given this project's own cost estimate (`../docs/roadmap.md`) is effectively $0–1/month, a $10 threshold firing at all is itself a useful early signal that something's misconfigured (e.g. reserved concurrency not applied, a retry loop gone wrong).
 
 ## 6. Install Terraform
 

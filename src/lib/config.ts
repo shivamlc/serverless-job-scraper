@@ -10,9 +10,9 @@ import { parseIntEnv } from './env.js';
  * plain SearchParams object that flows down as a function argument from there;
  * getSkipWindowHours() — how many hours before a job is re-scraped (specs/04).
  * Used by: getSkipWindowHours() is used by src/handlers/listJobs.ts.
- * loadSearchParamsFromEnv() is for local/manual runs (e.g. the planned refactor
- * of ../../seek-scrape-jobs.spec.ts) — Lambda gets SearchParams from its
- * EventBridge event instead (specs/01's "production config source").
+ * loadSearchParamsFromEnv() is used by ../../scripts/scrapeLocal.ts for local/
+ * manual runs — Lambda gets SearchParams from its EventBridge event instead
+ * (specs/01's "production config source").
  */
 
 const WORK_TYPES = ['full-time', 'part-time', 'contract', 'casual'] as const;

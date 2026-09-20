@@ -4,7 +4,7 @@
 
 A serverless, cron-triggered pipeline that scrapes job listings from SEEK (and, in future, Indeed/LinkedIn) and stores structured data in DynamoDB plus a raw HTML snapshot of each job page in S3.
 
-Full architectural rationale, cost analysis, and design tradeoffs live in `../aws-roadmap/serverless-seek-scraper.md`. That document is the **why**; the specs in this directory are the **contract** — precise enough to implement and test against without re-reading the rationale. When the two disagree, the specs in this directory win for implementation details; the roadmap wins for "why this shape."
+Full architectural rationale, cost analysis, and design tradeoffs live in [`docs/roadmap.md`](../docs/roadmap.md) (copied into this repo, not the sibling `claude-job-search` repo, so it survives that repo being archived — `serverless-job-scraper` is self-contained and is the project going forward). That document is the **why**; the specs in this directory are the **contract** — precise enough to implement and test against without re-reading the rationale. When the two disagree, the specs in this directory win for implementation details; the roadmap wins for "why this shape." Note `docs/roadmap.md` predates this repo's own local-runnable entrypoint (`scripts/scrapeLocal.ts`) — its "Refactor needed" section describes a plan that has since been carried out; see spec 03 for the current state.
 
 ## In scope (v1)
 
@@ -18,7 +18,7 @@ Full architectural rationale, cost analysis, and design tradeoffs live in `../aw
 
 - Indeed and LinkedIn adapters (the interface must support them; they are not implemented yet).
 - Actually running `terraform apply` against a real AWS account, or pushing images to a real ECR repo — this repo provides everything needed to do so, but no agent should run either without a human explicitly asking for that specific action in that specific session.
-- A UI for browsing scraped jobs (the existing `webapp` already does this against MongoDB; wiring `webapp` to read from DynamoDB instead is a separate, later piece of work).
+- A UI for browsing scraped jobs. The sibling `claude-job-search/webapp` project did this against MongoDB, but that repo is slated for archiving — treat this pipeline as standalone rather than assuming `webapp` will exist to integrate with later.
 - Batching multiple jobs per Lambda B invocation (SQS batch size stays at 1 for v1 — see spec 05).
 
 ## Definition of done for any feature in this repo

@@ -1,6 +1,6 @@
 # Spec 03 — SEEK Adapter
 
-Ports the logic already proven in `../seek-scrape-jobs.spec.ts` into a `JobSiteAdapter` implementation. Behavior should match that script exactly except where explicitly changed below (parameterization, generator shape, HTML capture).
+Implemented in `src/adapters/seek.ts` — the current source of truth. Originally ported from the sibling `claude-job-search` repo's `seek-scrape-jobs.spec.ts` (that repo is slated for archiving, so this spec no longer treats it as a live reference); behavior matches that script except where explicitly changed below (parameterization, generator shape, HTML capture) — and one bug fixed since porting: the `jobId` extraction (see `listJobLinks` below).
 
 ## `buildSearchUrl(params: SearchParams): string`
 
@@ -15,24 +15,24 @@ https://au.seek.com/{keywords}-jobs/in-{citySlug}/{workType}?daterange={dateRang
 
 ## `listJobLinks(page, searchUrl)`
 
-Ports the outer `while (hasNextPage)` loop (`seek-scrape-jobs.spec.ts:33-181`), restructured as an `AsyncGenerator<JobLink>`:
+Restructured from the original script's outer `while (hasNextPage)` loop into an `AsyncGenerator<JobLink>`:
 
 1. For `pageNum` starting at 1: navigate to `pageNum === 1 ? searchUrl : ${searchUrl}&page=${pageNum}` with retry (see Retry policy below).
 2. `await page.waitForTimeout(2000)` after navigation (matches today's behavior — SEEK's listing is client-rendered).
-3. Extract job cards via `page.$$eval('article[data-card-type="JobCard"] a[data-automation="jobTitle"]', ...)`, parsing `jobId` from the `jobId=(\d+)` pattern in the href.
+3. Extract job cards via `page.$$eval('article[data-card-type="JobCard"] a[data-automation="jobTitle"]', ...)`, parsing `jobId` from the `/job/(\d+)` **path segment** in the href (e.g. `https://au.seek.com/job/94683535?type=promoted...`) — verified against the real live site via `scripts/scrapeLocal.ts`; an earlier assumption that the id was a `jobId=` query param was wrong and silently produced empty ids.
 4. If zero job cards found, stop (no more pages) — do not yield, do not increment.
 5. Otherwise, `yield` a `JobLink` for each card found on this page, then check for a next-page control (`[data-automation="page-next"], a[aria-label="Next"], button[aria-label="Next"], [aria-label="Go to next page"]`); continue if present+enabled, or if the page returned a full page of results (≥20) even though no next-page control was detected (today's existing fallback heuristic).
 6. **Explicitly does not** navigate into any job's detail page — that responsibility moved to `scrapeJobDetail` / Lambda B.
 
 ## `scrapeJobDetail(page, url)`
 
-Ports the per-job `page.evaluate()` block (`seek-scrape-jobs.spec.ts:75-135`):
+Restructured from the original script's per-job `page.evaluate()` block:
 
 1. Navigate to `url` with retry.
 2. `await page.waitForTimeout(1500)`.
 3. Run the existing DOM-walking `page.evaluate()` — same heading/section/list extraction logic, unchanged — to get `title`, `company`, `location`, `salary`, `workType`, `postedDate`, `sections`, `fullText`.
 4. Capture `const html = await page.content()` **after** the evaluate call (same loaded state), included in the returned `ScrapedJobDetail` as `html`.
-5. Parse `jobId` from `url`'s `jobId=(\d+)` pattern; set `listingUrl = url`.
+5. Parse `jobId` from `url`'s `/job/(\d+)` path segment; set `listingUrl = url`.
 6. Return the full `ScrapedJobDetail`.
 
 ## Retry policy (shared helper, used by both methods)

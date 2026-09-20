@@ -3,15 +3,17 @@ import type { JobLink, JobSiteAdapter, ScrapedJobDetail, SearchParams } from './
 
 /**
  * Purpose: SEEK's JobSiteAdapter implementation — the only concrete adapter that
- * exists today. Ported from the original ../../seek-scrape-jobs.spec.ts (a
- * Playwright test file) into three plain, test-runner-independent functions
- * (specs/03-seek-adapter.md): buildSearchUrl (SearchParams → SEEK's URL/query
- * shape), listJobLinks (pagination walk), scrapeJobDetail (per-job extraction +
- * raw HTML snapshot capture).
+ * exists today. Originally ported from the sibling claude-job-search repo's
+ * seek-scrape-jobs.spec.ts (a Playwright test file), now the current source of
+ * truth — that repo is slated for archiving, so this file no longer depends on
+ * it. Three plain, test-runner-independent functions (specs/03-seek-adapter.md):
+ * buildSearchUrl (SearchParams → SEEK's URL/query shape), listJobLinks
+ * (pagination walk), scrapeJobDetail (per-job extraction + raw HTML snapshot capture).
  * Exports: seekAdapter (the JobSiteAdapter object; everything else in this file
  * is a private implementation detail).
- * Used by: src/adapters/index.ts (registered under the "seek" key) — never
- * imported directly by a handler, always resolved via getAdapter("seek").
+ * Used by: src/adapters/index.ts (registered under the "seek" key, resolved via
+ * getAdapter("seek") by the Lambda handlers), and directly by
+ * ../../scripts/scrapeLocal.ts for local runs.
  */
 
 /**
@@ -48,8 +50,12 @@ async function gotoWithRetry(page: Page, url: string): Promise<void> {
   }
 }
 
+// specs/03-seek-adapter.md — SEEK's job id is the path segment after "/job/"
+// (e.g. https://au.seek.com/job/94683535?type=promoted...), not a "jobId="
+// query param. Verified against the real live site (scripts/scrapeLocal.ts) —
+// the original pre-refactor script's "jobId=" assumption did not match reality.
 function extractJobId(url: string): string {
-  return url.match(/jobId=(\d+)/)?.[1] ?? '';
+  return url.match(/\/job\/(\d+)/)?.[1] ?? '';
 }
 
 /** specs/03-seek-adapter.md — buildSearchUrl */
@@ -86,7 +92,7 @@ async function* listJobLinks(page: Page, searchUrl: string): AsyncGenerator<JobL
       (anchors) =>
         anchors.map((a) => ({
           href: (a as HTMLAnchorElement).href,
-          jobId: (a as HTMLAnchorElement).href.match(/jobId=(\d+)/)?.[1] ?? '',
+          jobId: (a as HTMLAnchorElement).href.match(/\/job\/(\d+)/)?.[1] ?? '',
         }))
     );
 

@@ -2,7 +2,7 @@
 
 ## What this repo is
 
-A serverless, source-agnostic job-scraping pipeline (SEEK first; Indeed/LinkedIn designed-for but not yet implemented). Two Lambdas connected by one SQS queue, DynamoDB + S3 storage, Terraform infra, GitHub Actions CI/CD. Full rationale: `../aws-roadmap/serverless-seek-scraper.md`. Precise, testable contracts: `specs/*.md`.
+A serverless, source-agnostic job-scraping pipeline (SEEK first; Indeed/LinkedIn designed-for but not yet implemented). Two Lambdas connected by one SQS queue, DynamoDB + S3 storage, Terraform infra, GitHub Actions CI/CD. Full rationale: `docs/roadmap.md` (self-contained — copied in from the sibling `claude-job-search` repo, which is slated for archiving; this repo does not depend on that one). Precise, testable contracts: `specs/*.md`.
 
 ## Spec-driven workflow — read this before writing code
 
@@ -26,10 +26,11 @@ npm run typecheck        # tsc --noEmit
 npm run lint              # eslint
 npm test                   # unit tests (Vitest) — no network, no AWS, no Docker
 npm run test:integration    # integration tests — requires Docker (LocalStack)
+npm run scrape:local         # drive the real adapter against the real live site once
 npm run build                 # compile src/ for the Lambda container image
 ```
 
-Run `typecheck`, `lint`, and `npm test` before considering any change finished. Integration tests require Docker; run them when touching anything under `src/handlers/` or `src/lib/`.
+Run `typecheck`, `lint`, and `npm test` before considering any change finished. Integration tests require Docker; run them when touching anything under `src/handlers/` or `src/lib/`. `scrape:local` hits the real live site — deliberate/opt-in like `test:live-smoke`, not part of routine verification; use it when you actually need to confirm behavior against the real site (e.g. after touching `src/adapters/seek.ts`'s selectors or URL construction).
 
 ## Code conventions
 

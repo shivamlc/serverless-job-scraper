@@ -1,6 +1,7 @@
 # Node
 node_modules/
 dist/
+dist-scripts/
 coverage/
 *.tsbuildinfo
 npm-debug.log*
@@ -28,6 +29,9 @@ crash.*.log
 test-results/
 playwright-report/
 *.zip
+
+# scripts/scrapeLocal.ts output — real scraped data, never committed
+seek-job-results.local.json
 
 # Editors / OS
 .vscode/

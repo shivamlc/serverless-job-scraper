@@ -13,7 +13,8 @@ A single ordered checklist tying together everything already built (`specs/`, `t
 | Terraform (`terraform/*.tf`) | ✅ `fmt`/`validate` clean, multi-env (`dev`/`uat`/`prod`) parameterized |
 | GitHub Actions workflows | ✅ Written, action versions current (Node 24 majors) |
 | Git repo | ✅ Committed and pushed — `origin` is `github.com/shivamlc/serverless-job-scraper`, `main` up to date |
-| **Local runnable end-to-end scrape** | ⬜ **Not done** — see Track A below, this is the one real code gap left |
+| **Local runnable end-to-end scrape** | ✅ **Done** — `npm run scrape:local` (Track A below), verified against the real live site |
+| `docs/roadmap.md` | ✅ Copied in from the sibling repo so this repo is self-contained ahead of that repo's archiving |
 | AWS account bootstrap (IAM, billing alarm, OIDC role) | ⬜ Not done (or in progress on your end — `terraform/README.md`) |
 | Terraform state backend bootstrap | ⬜ Not done |
 | First `terraform apply` (any environment) | ⬜ Not done — nothing is deployed to AWS yet |
@@ -22,34 +23,20 @@ A single ordered checklist tying together everything already built (`specs/`, `t
 
 ---
 
-## Track A — Finish making it runnable locally
+## Track A — Runnable locally ✅ Done
 
-This is genuinely the one piece of code work still outstanding. Everything in `src/` was built and tested, but the **local entrypoint that actually drives a real SEEK scrape** — the thing `specs/03-seek-adapter.md` and `specs/09-terraform-infra.md` call "the refactor" — was never done. Right now, `src/adapters/seek.ts` is only exercised by tests (against fixtures) and by the Lambda handlers (which need AWS). There is no `npm run scrape` you can point at the real site yet.
+`claude-job-search` (the sibling repo housing `seek-scrape-jobs.spec.ts`, `run-seek-scrape-jobs.sh`, and `webapp`) is slated for archiving, so this was rebuilt as a **self-contained** entrypoint inside this repo rather than by refactoring that sibling repo's files:
 
-1. **Replace `../seek-scrape-jobs.spec.ts`'s body** with a thin script that:
-   ```ts
-   import { chromium } from 'playwright-core'; // or '@playwright/test' locally
-   import { seekAdapter } from './serverless-job-scraper/src/adapters/seek.js';
-   import { loadSearchParamsFromEnv } from './serverless-job-scraper/src/lib/config.js';
+- **`scripts/scrapeLocal.ts`** — loads `SearchParams` via `loadSearchParamsFromEnv()`, drives `src/adapters/seek.ts` (`buildSearchUrl` → `listJobLinks` → `scrapeJobDetail`) against the real live site, writes to `seek-job-results.local.json` (gitignored).
+- Run it: `npm run scrape:local` (override search params via `SCRAPE_*` env vars, cap the run with `SCRAPE_LOCAL_MAX_JOBS=N`).
+- Compiles via `tsc -p tsconfig.scripts.json` rather than an esbuild-based runner (`tsx`) — esbuild's function-name-preservation helper broke `page.evaluate()` with `ReferenceError: __name is not defined`. See `README.md` "Running locally" step 4.
+- `docs/roadmap.md` — the original design-rationale doc, copied in from `claude-job-search/aws-roadmap/` so it survives that repo's archiving; `specs/00-overview.md` now points here instead.
 
-   const params = loadSearchParamsFromEnv();
-   const browser = await chromium.launch();
-   const page = await browser.newPage();
-   const searchUrl = seekAdapter.buildSearchUrl(params);
+**Two real bugs found and fixed by actually running this against the live site** (fixtures alone couldn't have caught either):
+1. Root `package.json` had `"type": "module"`, but both this script and the Lambda build (`tsconfig.build.json`) compile to CommonJS — the compiled output would `ReferenceError: exports is not defined` at runtime. This would have **crashed the deployed Lambda on cold start**, undetected until a real deploy. Fixed: `"type": "commonjs"`.
+2. SEEK's real job URLs are `https://au.seek.com/job/94683535?type=promoted...` — the id is the **path segment** after `/job/`, not a `jobId=` query param. The original script's `/jobId=(\d+)/` regex (ported faithfully into `src/adapters/seek.ts`) silently matched nothing against the real site, producing an empty `jobId` on every job. Fixed in `src/adapters/seek.ts`'s `extractJobId` and the job-card extraction in `listJobLinks`; fixtures and tests updated to match.
 
-   const links = [];
-   for await (const link of seekAdapter.listJobLinks(page, searchUrl)) links.push(link);
-
-   const jobs = [];
-   for (const { url } of links) jobs.push(await seekAdapter.scrapeJobDetail(page, url));
-
-   // write jobs to seek-job-results.json, same as today — keeps run-seek-scrape-jobs.sh working
-   ```
-   This keeps `run-seek-scrape-jobs.sh` and `webapp`'s "run scraper now" button working unchanged (per spec 03), just no longer hardcoded to Melbourne/7-days — it now goes through `loadSearchParamsFromEnv()`'s `SCRAPE_*` env vars (`specs/01-search-params-and-config.md`), defaulting to the same values as before when unset.
-2. **Run it**: `SCRAPE_CITY_LABEL=Melbourne ./run-seek-scrape-jobs.sh` (or with no env vars at all, for the defaults) from the repo root — confirm it produces the same shape of `seek-job-results.json` as before.
-3. **Optional but worth doing while you're in there**: a small local script that invokes `handlers/listJobs.ts`/`handlers/jobDetail.ts` directly (not through a deployed Lambda) against LocalStack — useful for testing the full DynamoDB/S3 write path without waiting on a real deploy. The integration tests already do exactly this (`tests/integration/*.integration.test.ts`) — a standalone script would just be those minus the test assertions, handy for manual poking.
-
-**Done when**: you can run one command locally and get real, fresh SEEK job data — either into `seek-job-results.json` (step 1–2) or into a LocalStack DynamoDB table/S3 bucket (step 3) — without touching real AWS.
+**Optional, not yet done**: a small local script invoking `handlers/listJobs.ts`/`handlers/jobDetail.ts` directly against LocalStack (not through a deployed Lambda) for manual DynamoDB/S3 write-path testing — `tests/integration/*.integration.test.ts` already does exactly this, minus the assertions.
 
 ---
 
@@ -107,12 +94,12 @@ This creates the full DEV stack: DynamoDB table, S3 bucket, SQS queue+DLQ, both 
 
 ## Suggested order (merging both tracks)
 
-1. Track A (local runnable) — independent of AWS, do it whenever, unblocks manual testing for everything after.
+1. ~~Track A (local runnable)~~ — done.
 2. B1 → B2 → B3 (AWS bootstrap + first manual DEV apply) — proves the infrastructure shape actually works before handing it to CI.
 3. B4 (GitHub setup) → B5 (let CI/CD take over) — from here on, `main` merges auto-deploy to DEV, and UAT/PROD are one `workflow_dispatch` away.
 
 ## Optional / later (not blocking "runnable and deployable")
 
-- Wire `webapp`'s job-browsing UI to read from DynamoDB instead of MongoDB (currently out of scope — `webapp` and this pipeline are independent until you decide to connect them).
+- A job-browsing UI reading from DynamoDB — the sibling `webapp` did this against MongoDB, but that repo is being archived; treat this as a from-scratch future project, not a migration.
 - Add the Indeed/LinkedIn adapters (`specs/02`/`specs/03`'s extensibility point) — one adapter module + one `sources` entry in `terraform/variables.tf`, no other changes.
 - Raise Lambda B's SQS batch size once real volume justifies amortizing browser cold-starts (`specs/05`'s deferred optimization).

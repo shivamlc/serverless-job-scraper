@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "Serverless, source-agnostic job-scraping pipeline (SEEK first) — DynamoDB + S3, Terraform, GitHub Actions CI/CD.",
-  "type": "module",
+  "type": "commonjs",
   "engines": {
     "node": ">=20"
   },
@@ -14,6 +14,7 @@
     "test:watch": "vitest tests/unit",
     "test:integration": "vitest run tests/integration",
     "test:live-smoke": "vitest run tests/live-smoke",
+    "scrape:local": "tsc -p tsconfig.scripts.json && node dist-scripts/scripts/scrapeLocal.js",
     "build": "tsc -p tsconfig.build.json"
   },
   "dependencies": {

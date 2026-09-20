@@ -76,9 +76,9 @@ describe('seekAdapter (specs/03-seek-adapter.md)', () => {
     }
 
     expect(links).toEqual([
-      { jobId: '11111111', url: expect.stringContaining('jobId=11111111') },
-      { jobId: '22222222', url: expect.stringContaining('jobId=22222222') },
-      { jobId: '33333333', url: expect.stringContaining('jobId=33333333') },
+      { jobId: '11111111', url: expect.stringContaining('/job/11111111') },
+      { jobId: '22222222', url: expect.stringContaining('/job/22222222') },
+      { jobId: '33333333', url: expect.stringContaining('/job/33333333') },
     ]);
 
     await page.close();
@@ -103,7 +103,7 @@ describe('seekAdapter (specs/03-seek-adapter.md)', () => {
     page = await browser.newPage();
     await fulfillAllRequestsWith(page, readFixture('job-detail.html'));
 
-    const url = 'https://fixture.test/job?jobId=99999999';
+    const url = 'https://fixture.test/job/99999999?type=standard';
     const result = await seekAdapter.scrapeJobDetail(page, url);
 
     expect(result.jobId).toBe('99999999');
@@ -129,7 +129,7 @@ describe('seekAdapter (specs/03-seek-adapter.md)', () => {
     'retries navigation on a network-shaped failure before succeeding',
     async () => {
       page = await browser.newPage();
-      const targetUrl = 'https://fixture.test/job?jobId=1';
+      const targetUrl = 'https://fixture.test/job/1?type=standard';
       let attempts = 0;
       // Routed to the exact target URL only, so an incidental favicon request
       // (unrouted, and thus simply failing silently) can't inflate the count.

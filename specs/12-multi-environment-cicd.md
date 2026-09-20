@@ -6,7 +6,7 @@ Extends spec 09 (Terraform) and spec 10 (CI/CD) — read those first. This spec 
 
 **One AWS account, three environments, isolated by resource naming + separate Terraform state** — not three AWS accounts, not Terraform workspaces.
 
-- **Why not three accounts**: full account separation (AWS Organizations, cross-account roles) is the "correct" enterprise answer, but it's a big jump in setup cost for a solo project already committed to "cheapest viable" (`../aws-roadmap/serverless-seek-scraper.md`). One account keeps `terraform/README.md`'s bootstrap steps valid as-is.
+- **Why not three accounts**: full account separation (AWS Organizations, cross-account roles) is the "correct" enterprise answer, but it's a big jump in setup cost for a solo project already committed to "cheapest viable" (`../docs/roadmap.md`). One account keeps `terraform/README.md`'s bootstrap steps valid as-is.
 - **Why not workspaces**: workspaces share the same `.tf` files implicitly and make it easy to `apply` against the wrong environment by forgetting to `workspace select`. Explicit `-backend-config`/`-var-file` per environment (below) makes the target environment a visible argument on every command, not ambient state.
 - **Why one shared root module**: environment-specific directories (`envs/dev/*.tf`, `envs/uat/*.tf`, ...) drift apart over time as each gets hand-edited independently. One root module + one `environment` variable threaded into every resource name is the only way DEV, UAT, and PROD are guaranteed to be the same infrastructure shape.
 

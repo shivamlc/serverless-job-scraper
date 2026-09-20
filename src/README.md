@@ -34,7 +34,7 @@ Both handlers are thin: they orchestrate calls into `adapters/` (site-specific s
 | File | Purpose |
 |---|---|
 | `adapters/types.ts` | The contract: `SearchParams` (what to search for, spec 01) and `JobSiteAdapter` (`buildSearchUrl`/`listJobLinks`/`scrapeJobDetail`, spec 02). Pure types — no implementation. |
-| `adapters/seek.ts` | The only implemented adapter. Ported from `../../seek-scrape-jobs.spec.ts`. Owns everything SEEK-specific: URL construction, CSS selectors, pagination/next-button detection, the DOM-walking section extractor, and the network-error retry policy. |
+| `adapters/seek.ts` | The only implemented adapter. Originally ported from the sibling `claude-job-search` repo's `seek-scrape-jobs.spec.ts` (now historical — that repo is slated for archiving, and this file is the current source of truth, exercised directly by `../scripts/scrapeLocal.ts`). Owns everything SEEK-specific: URL construction, CSS selectors, pagination/next-button detection, the DOM-walking section extractor, and the network-error retry policy. |
 | `adapters/index.ts` | `getAdapter(source)` — the registry both handlers call instead of importing `seek.ts` directly. Adding Indeed/LinkedIn means adding one entry here, not touching a handler. |
 | `adapters/seek.fixtures/*.html` | Scrubbed, hand-built SEEK HTML fixtures (`results-page.html`, `results-page-last.html`, `job-detail.html`) that let `seek.ts`'s tests drive a real headless browser with zero real network calls — see each file's own header comment for exactly what it exercises. |
 
@@ -50,7 +50,7 @@ Both handlers are thin: they orchestrate calls into `adapters/` (site-specific s
 | File | Purpose |
 |---|---|
 | `lib/env.ts` | `getRequiredEnv` / `parseIntEnv` — the two low-level primitives every other `lib/` module's env-backed getter is built on. |
-| `lib/config.ts` | `loadSearchParamsFromEnv()` — the *only* function in this repo allowed to build a `SearchParams` from environment variables (local/manual runs); `getSkipWindowHours()` — the re-scrape freshness window Lambda A reads. |
+| `lib/config.ts` | `loadSearchParamsFromEnv()` — the *only* function in this repo allowed to build a `SearchParams` from environment variables, called by `../scripts/scrapeLocal.ts`; `getSkipWindowHours()` — the re-scrape freshness window Lambda A reads. |
 | `lib/browser.ts` | `launchBrowser()` — picks `@sparticuz/chromium` inside Lambda or a normal local Chromium otherwise, so neither handler has to know which environment it's running in. |
 | `lib/dynamo.ts` | All DynamoDB access: `putJobDetail`, the skip-check `findLastScrapedAt` (queries the `listingUrl-index` GSI), and the pure `isWithinFreshnessWindow` helper. Table name is read from `SCRAPED_JOBS_TABLE_NAME` (environment-scoped by Terraform — spec 12), never hardcoded. |
 | `lib/s3.ts` | All S3 access: `getSnapshotBucketName()` + `putSnapshot()`. |

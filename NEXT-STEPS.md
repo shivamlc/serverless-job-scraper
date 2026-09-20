@@ -12,14 +12,15 @@ A single ordered checklist tying together everything already built (`specs/`, `t
 | Integration tests | ✅ 3/3 passing against a real LocalStack container (`npm run test:integration`) |
 | Terraform (`terraform/*.tf`) | ✅ `fmt`/`validate` clean, multi-env (`dev`/`uat`/`prod`) parameterized |
 | GitHub Actions workflows | ✅ Written, action versions current (Node 24 majors) |
-| Git repo | ✅ Committed and pushed — `origin` is `github.com/shivamlc/serverless-job-scraper`, `main` up to date |
-| **Local runnable end-to-end scrape** | ✅ **Done** — `npm run scrape:local` (Track A below), verified against the real live site |
-| `docs/roadmap.md` | ✅ Copied in from the sibling repo so this repo is self-contained ahead of that repo's archiving |
+| Git repo | ⚠️ `origin` is `github.com/shivamlc/serverless-job-scraper`, last push (`main`) is up to date — but Track A's work (below) is done locally and **not yet committed/pushed**. `git status` will show it. |
+| **Local runnable end-to-end scrape** | ✅ **Done** — `npm run scrape:local` (Track A below), verified against the real live site, including two real bugs found and fixed by actually running it |
+| `docs/roadmap.md` + self-containment | ✅ Roadmap copied in from the sibling repo, every cross-reference to that repo's soon-to-be-archived files reworded, so this repo no longer depends on it |
+| GitHub Actions action versions (Node 20 deprecation) | ✅ Fixed — bumped `checkout`/`setup-node`/`github-script`/`configure-aws-credentials`/`setup-terraform` to their Node 24 majors. Not yet re-verified against a fresh CI run (nothing pushed since). |
 | AWS account bootstrap (IAM, billing alarm, OIDC role) | ⬜ Not done (or in progress on your end — `terraform/README.md`) |
 | Terraform state backend bootstrap | ⬜ Not done |
 | First `terraform apply` (any environment) | ⬜ Not done — nothing is deployed to AWS yet |
 | GitHub Environments + repo/environment variables | ⬜ Not done |
-| First CI run | ✅ Has run at least once (you pasted a real log) — but it errored/warned, not fully green end-to-end |
+| First CI run since the Node 24 action fix | ⬜ Not verified — push Track A's changes and watch `ci.yml` to confirm |
 
 ---
 
@@ -94,7 +95,7 @@ This creates the full DEV stack: DynamoDB table, S3 bucket, SQS queue+DLQ, both 
 
 ## Suggested order (merging both tracks)
 
-1. ~~Track A (local runnable)~~ — done.
+1. ~~Track A (local runnable)~~ — done, but still sitting uncommitted. Commit and push it before anything else below — `ci.yml` running on that push is the real (first) check that the Node 24 action-version fix actually works, and it's the cheapest way to confirm the `package.json` `"type": "commonjs"` change didn't break anything else.
 2. B1 → B2 → B3 (AWS bootstrap + first manual DEV apply) — proves the infrastructure shape actually works before handing it to CI.
 3. B4 (GitHub setup) → B5 (let CI/CD take over) — from here on, `main` merges auto-deploy to DEV, and UAT/PROD are one `workflow_dispatch` away.
 
